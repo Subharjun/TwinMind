@@ -183,7 +183,12 @@ export default function TwinMindApp() {
           id: uid(),
           timestamp: nowTimestamp(),
         }));
-        setSuggestions(stamped);
+        // Prepend new suggestions to the top so it builds an infinite feed
+        setSuggestions(prev => {
+          // Keep maximum 50 suggestions so the browser doesn't lag on massive meetings
+          const combined = [...stamped, ...prev];
+          return combined.slice(0, 50);
+        });
         setAllSuggestions(prev => [...prev, ...stamped]);
         if (data.speaker_intent) setSpeakerIntent(data.speaker_intent as SpeakerIntent);
       }
