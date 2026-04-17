@@ -82,6 +82,7 @@ export default function TwinMindApp() {
 
   // Transcript
   const [transcript, setTranscript] = useState<TranscriptBlock[]>([]);
+  const transcriptRef = useRef<TranscriptBlock[]>([]);
   const [liveText, setLiveText] = useState("");
   const transcriptEndRef = useRef<HTMLDivElement>(null);
 
@@ -149,14 +150,14 @@ export default function TwinMindApp() {
   // ── Get transcript text helpers ───────────────────────────────────────────
 
   const getFullTranscript = useCallback(() => {
-    return transcript.map(b => `[${b.timestamp}] ${b.text}`).join("\n");
-  }, [transcript]);
+    return transcriptRef.current.map(b => `[${b.timestamp}] ${b.text}`).join("\n");
+  }, []); // using ref directly avoids stale closures
 
   // Last ~90 seconds approx: last 3 blocks (each ~30s)
   const getRecentContext = useCallback(() => {
-    const recent = transcript.slice(-3);
+    const recent = transcriptRef.current.slice(-3);
     return recent.map(b => b.text).join(" ") + (liveText ? " " + liveText : "");
-  }, [transcript, liveText]);
+  }, [liveText]); // liveText still needed to trigger standard updates if it's changing
 
   // ── Suggestions engine ────────────────────────────────────────────────────
 
@@ -250,7 +251,11 @@ export default function TwinMindApp() {
           timestamp: nowTimestamp(),
           duration: data.duration,
         };
-        setTranscript(prev => [...prev, block]);
+        setTranscript(prev => {
+          const next = [...prev, block];
+          transcriptRef.current = next; // sync ref
+          return next;
+        });
         setLiveText("");
       } else {
         setLiveText("");
